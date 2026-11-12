@@ -18,22 +18,22 @@ os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
 TEST_MODE = False 
 
-# إعدادات فيسبوك
+# إعدادات فيسبوك (تأكد من إضافتها في Secrets)
 FB_TOKEN_MEMEJI = os.getenv("FB_TOKEN_MEMEJI")
 PAGE_ID_MEMEJI = os.getenv("PAGE_ID_MEMEJI")
 
 CHANNELS = {
-    -1001234567890: { # رقم افتراضي
+    -1001234567890: { # رقم افتراضي لتتبع القناة
         "name": "ميمزجي", 
-        "target": "@MemejiIQ", 
-        "source_username": "@memsss_iq", # 👈 المصدر
+        "target": "@MemesjyIQ", # 👈 تم تصحيح يوزر قناتك
+        "source_username": "@memsss_iq", # 👈 قناة المصدر
         "fb_page_id": PAGE_ID_MEMEJI, 
         "fb_token": FB_TOKEN_MEMEJI,
-        # تعليمات الذكاء الاصطناعي: فقط فحص الإعلانات، بدون تعديل النص
+        # تعليمات الذكاء الاصطناعي: فحص الإعلانات فقط بدون تعديل النص
         "prompt": """مهمتك الوحيدة هي تحديد ما إذا كان النص التالي إعلاناً تجارياً (مثل: بيع متابعين، ترويج لعملات رقمية، إعلانات مدفوعة، روابط إحالة، عروض متاجر) أو محتوى عادي (ميمز، نكت، أخبار، فيديوهات).
 - إذا كان إعلاناً تجارياً، أعد: {"is_ad": true}
 - إذا كان محتوى عادياً، أعد: {"is_ad": false}
-لا تقم بتعديل النص إطلاقاً، فقط أعد النتيجة بصيغة JSON."""
+- لا تقم بتعديل النص إطلاقاً. أعد النتيجة بصيغة JSON فقط."""
     }
 }
 
@@ -133,7 +133,6 @@ def clean_text(text, source_username=None):
     if not text: return ""
     cleaned = text.replace('📊', '')
     if source_username: cleaned = re.sub(re.escape(source_username), '', cleaned, flags=re.IGNORECASE)
-    # إزالة روابط قناة المصدر فقط، وترك باقي النص كما هو
     cleaned = re.sub(r'(https?://)?t\.me/\S+', '', cleaned, flags=re.IGNORECASE)
     cleaned = re.sub(r'https?://t\.co/\S+', '', cleaned, flags=re.IGNORECASE)
     cleaned = re.sub(r'(?i)forwarded from.*', '', cleaned)
@@ -142,7 +141,7 @@ def clean_text(text, source_username=None):
 
 def contains_click_here_phrase(text): return bool(re.search(r'اضغط\s*هنا.{0,15}(للمشاهدة|لمشاهدة|مشاهدة)', text)) if text else False
 
-# فلتر برمجي إضافي صارم
+# فلتر برمجي صارم للإعلانات الواضحة
 def is_hardcoded_ad(text):
     if not text: return False
     ad_keywords = [r"promo", r"crypto", r"nft", r"subscribe", r"join my", r"giveaway", r"راسل\s+المعرف", r"للحجز", r"للطلب", r"سعر", r"دينار"]
@@ -166,7 +165,7 @@ def call_groq(prompt, max_retries=3):
             if attempt == max_retries: raise e
             time.sleep(2 ** attempt)
 
-# دالة فحص الإعلانات فقط (بدون تغيير النص)
+# فحص الإعلانات بالذكاء الاصطناعي (بدون تعديل النص)
 async def check_is_ad(config, text):
     if not text: return False
     custom_prompt = config.get("prompt", "")
@@ -185,7 +184,7 @@ async def check_is_ad(config, text):
         return bool(res.get("is_ad", False))
     except Exception as e:
         print(f"❌ خطأ فحص الإعلان: {e}")
-        return False # في حال الخطأ، ننشر أفضل من ألا ننشر
+        return False # في حال خطأ الاتصال، ننشر أفضل من ألا ننشر
 
 def _sync_post_to_facebook(page_id, token, text, media_data=None, is_video=False):
     if not page_id or not token: return
@@ -207,7 +206,8 @@ def _sync_post_to_facebook(page_id, token, text, media_data=None, is_video=False
         post_id = res_data.get("post_id") or res_data.get("id")
         print(f"✅ نُشر على فيسبوك ({page_id})")
         
-        comment_text = "تابعونا على التلكرام 👇\nhttps://t.me/MemejiIQ"
+        # التعليق التلقائي
+        comment_text = "تابعونا على التلكرام 👇\nhttps://t.me/MemesjyIQ"
         requests.post(f"{GRAPH}/{post_id}/comments", data={"access_token": token, "message": comment_text}, timeout=20)
         print(f"✅ تمت إضافة تعليق التلكرام.")
     except Exception as e:
@@ -225,7 +225,7 @@ async def process_batch(source_id, messages):
     
     if contains_click_here_phrase(raw_text): return
     
-    # 1. الفلتر البرمجي
+    # 1. فلتر برمجي
     if is_hardcoded_ad(raw_text): 
         print(f"⏭️ تجاهل إعلان تجاري (فلتر برمجي) — {config['name']}")
         return
@@ -236,16 +236,18 @@ async def process_batch(source_id, messages):
     
     cleaned = clean_text(raw_text, config.get("source_username"))
     
-    if is_duplicate_content(source_id, cleaned): return
+    if is_duplicate_content(source_id, cleaned): 
+        print(f"⏭️ تجاهل منشور مكرر — {config['name']}")
+        return
     
-    # 2. فحص الإعلانات بالذكاء الاصطناعي
+    # 2. فلتر الذكاء الاصطناعي (فحص إعلان فقط)
     if cleaned:
         is_ad = await check_is_ad(config, cleaned)
         if is_ad:
             print(f"⏭️ تجاهل إعلان (ذكاء اصطناعي) — {config['name']}")
             return 
     
-    # 👈 النص النهائي هو النص الأصلي بعد التنظيف (بدون أي إعادة صياغة)
+    # النص النهائي هو النص الأصلي بعد التنظيف
     final_text = cleaned
     
     if cleaned: record_published_text(source_id, cleaned)
