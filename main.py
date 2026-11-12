@@ -104,19 +104,18 @@ def _is_small_thumbnail_photo(photo):
         return False
     except Exception: return False
 
-# 🛠️ تم تعديل هذه الدالة لتجاهل ملفات التطبيقات والاكتفاء بالصور والفيديوهات
+# 🛠️ قبول الصور حتى لو كانت "مستند" (Image as Document)
 def _is_usable_media_msg(m):
     media = m.media
     if isinstance(media, MessageMediaPhoto): 
         return True
     if isinstance(media, MessageMediaDocument):
-        # نفحص إذا كان فيديو أو صورة متحركة (GIF)
-        if getattr(m, 'video', None) or getattr(m, 'gif', None):
-            return True
         doc = media.document
-        if doc and str(getattr(doc, "mime_type", "")).startswith(("video/", "image/gif")):
+        if not doc: return False
+        mime = str(getattr(doc, "mime_type", ""))
+        # نقبل الصور (حتى لو كانت ملف) والفيديوهات
+        if mime.startswith(("image/", "video/")):
             return True
-        # إذا كان ملف (تطبيق .apk أو مستند)، نرفضه
         return False
     if isinstance(media, MessageMediaWebPage):
         wp = getattr(media, "webpage", None)
@@ -256,34 +255,50 @@ async def process_batch(source_id, messages):
     
     if cleaned: record_published_text(source_id, cleaned)
     
-    # هنا سيتم تجاهل ملفات التطبيقات (.apk) وعدم إضافتها إلى القائمة
     media_msgs = [m for m in messages if _is_usable_media_msg(m)]
     media_data = None
     is_video = False
-    
+    temp_path = None
+
     if media_msgs:
         first_m = media_msgs[0]
-        if isinstance(first_m.media, MessageMediaDocument) and getattr(first_m, 'video', None):
-            is_video = True
+        if isinstance(first_m.media, MessageMediaDocument):
+            mime = str(getattr(first_m.media.document, "mime_type", ""))
+            if mime.startswith("video/"):
+                is_video = True
+        
         try: 
-            media_data = await client.download_media(first_m, file=bytes)
+            # 1. تحميل الميديا وحفظها في مجلد مؤقت لضمان إرسالها كصورة/فيديو
+            temp_path = await client.download_media(first_m, file=f"{DOWNLOAD_DIR}/")
+            if temp_path:
+                # 2. قراءة البيانات لفيسبوك
+                with open(temp_path, "rb") as f:
+                    media_data = f.read()
         except Exception as e: 
             print(f"⚠️ فشل تحميل الميديا: {e}")
 
-    # إذا لم يكن هناك نص ولا صورة/فيديو، يتم تجاهل المنشور بالكامل
-    if not final_text.strip() and not media_data: 
+    if not final_text.strip() and not temp_path: 
+        print(f"⏭️ تجاهل منشور فارغ (ملف غير مدعوم) — {config['name']}")
         return
 
     # النشر على تيليجرام
     try:
-        if media_data:
-            await client.send_file(config["target"], media_data, caption=final_text or None, parse_mode="html")
-            print(f"✅ نُشر (وسائط) — {config['name']} [تيليجرام]")
+        if temp_path:
+            # force_document=False يضمن إرسالها كـ "صورة" وليس ملف
+            await client.send_file(config["target"], temp_path, caption=final_text or None, force_document=False, parse_mode="html")
+            print(f"✅ نُشر (صورة/فيديو) — {config['name']} [تيليجرام]")
         elif final_text:
             await client.send_message(config["target"], final_text, parse_mode="html", link_preview=False)
             print(f"✅ نُشر (نص) — {config['name']} [تيليجرام]")
     except Exception as e: 
         print(f"❌ خطأ تيليجرام — {config['name']}: {e}")
+    finally:
+        # 3. مسح الملف المؤقت بعد النشر
+        if temp_path and os.path.exists(temp_path):
+            try:
+                os.remove(temp_path)
+            except OSError:
+                pass
 
     # النشر على فيسبوك
     if config.get("fb_token") and config.get("fb_page_id"):
