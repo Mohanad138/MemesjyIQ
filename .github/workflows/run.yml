@@ -1,0 +1,36 @@
+name: Memeji Relay
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+  repository_dispatch:
+    types: [run-memeji]
+concurrency:
+  group: relay-memeji
+  cancel-in-progress: false
+permissions:
+  contents: write
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - run: |
+          git config user.name "relay-bot"
+          git config user.email "relay-bot@users.noreply.github.com"
+      - name: Run bot
+        env:
+          TG_API_ID: ${{ secrets.TG_API_ID }}
+          TG_API_HASH: ${{ secrets.TG_API_HASH }}
+          TG_SESSION: ${{ secrets.TG_SESSION }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          FB_TOKEN_MEMEJI: ${{ secrets.FB_TOKEN_MEMEJI }}
+          PAGE_ID_MEMEJI: ${{ secrets.PAGE_ID_MEMEJI }}
+        run: python main.py
