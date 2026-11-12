@@ -18,18 +18,16 @@ os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
 TEST_MODE = False 
 
-# إعدادات فيسبوك (تأكد من إضافتها في Secrets)
 FB_TOKEN_MEMEJI = os.getenv("FB_TOKEN_MEMEJI")
 PAGE_ID_MEMEJI = os.getenv("PAGE_ID_MEMEJI")
 
 CHANNELS = {
-    -1001234567890: { # رقم افتراضي لتتبع القناة
+    -1001234567890: { 
         "name": "ميمزجي", 
-        "target": "@MemesjyIQ", # 👈 تم تصحيح يوزر قناتك
-        "source_username": "@memsss_iq", # 👈 قناة المصدر
+        "target": "@MemesjyIQ", 
+        "source_username": "@memsss_iq", 
         "fb_page_id": PAGE_ID_MEMEJI, 
         "fb_token": FB_TOKEN_MEMEJI,
-        # تعليمات الذكاء الاصطناعي: فحص الإعلانات فقط بدون تعديل النص
         "prompt": """مهمتك الوحيدة هي تحديد ما إذا كان النص التالي إعلاناً تجارياً (مثل: بيع متابعين، ترويج لعملات رقمية، إعلانات مدفوعة، روابط إحالة، عروض متاجر) أو محتوى عادي (ميمز، نكت، أخبار، فيديوهات).
 - إذا كان إعلاناً تجارياً، أعد: {"is_ad": true}
 - إذا كان محتوى عادياً، أعد: {"is_ad": false}
@@ -106,13 +104,25 @@ def _is_small_thumbnail_photo(photo):
         return False
     except Exception: return False
 
+# 🛠️ تم تعديل هذه الدالة لتجاهل ملفات التطبيقات والاكتفاء بالصور والفيديوهات
 def _is_usable_media_msg(m):
     media = m.media
-    if isinstance(media, (MessageMediaPhoto, MessageMediaDocument)): return True
+    if isinstance(media, MessageMediaPhoto): 
+        return True
+    if isinstance(media, MessageMediaDocument):
+        # نفحص إذا كان فيديو أو صورة متحركة (GIF)
+        if getattr(m, 'video', None) or getattr(m, 'gif', None):
+            return True
+        doc = media.document
+        if doc and str(getattr(doc, "mime_type", "")).startswith(("video/", "image/gif")):
+            return True
+        # إذا كان ملف (تطبيق .apk أو مستند)، نرفضه
+        return False
     if isinstance(media, MessageMediaWebPage):
         wp = getattr(media, "webpage", None)
         photo = getattr(wp, "photo", None)
-        if photo and not _is_small_thumbnail_photo(photo): return True
+        if photo and not _is_small_thumbnail_photo(photo): 
+            return True
     return False
 
 def extract_hidden_link_urls(message, source_username=None):
@@ -141,7 +151,6 @@ def clean_text(text, source_username=None):
 
 def contains_click_here_phrase(text): return bool(re.search(r'اضغط\s*هنا.{0,15}(للمشاهدة|لمشاهدة|مشاهدة)', text)) if text else False
 
-# فلتر برمجي صارم للإعلانات الواضحة
 def is_hardcoded_ad(text):
     if not text: return False
     ad_keywords = [r"promo", r"crypto", r"nft", r"subscribe", r"join my", r"giveaway", r"راسل\s+المعرف", r"للحجز", r"للطلب", r"سعر", r"دينار"]
@@ -165,7 +174,6 @@ def call_groq(prompt, max_retries=3):
             if attempt == max_retries: raise e
             time.sleep(2 ** attempt)
 
-# فحص الإعلانات بالذكاء الاصطناعي (بدون تعديل النص)
 async def check_is_ad(config, text):
     if not text: return False
     custom_prompt = config.get("prompt", "")
@@ -184,7 +192,7 @@ async def check_is_ad(config, text):
         return bool(res.get("is_ad", False))
     except Exception as e:
         print(f"❌ خطأ فحص الإعلان: {e}")
-        return False # في حال خطأ الاتصال، ننشر أفضل من ألا ننشر
+        return False 
 
 def _sync_post_to_facebook(page_id, token, text, media_data=None, is_video=False):
     if not page_id or not token: return
@@ -206,7 +214,6 @@ def _sync_post_to_facebook(page_id, token, text, media_data=None, is_video=False
         post_id = res_data.get("post_id") or res_data.get("id")
         print(f"✅ نُشر على فيسبوك ({page_id})")
         
-        # التعليق التلقائي
         comment_text = "تابعونا على التلكرام 👇\nhttps://t.me/MemesjyIQ"
         requests.post(f"{GRAPH}/{post_id}/comments", data={"access_token": token, "message": comment_text}, timeout=20)
         print(f"✅ تمت إضافة تعليق التلكرام.")
@@ -225,7 +232,6 @@ async def process_batch(source_id, messages):
     
     if contains_click_here_phrase(raw_text): return
     
-    # 1. فلتر برمجي
     if is_hardcoded_ad(raw_text): 
         print(f"⏭️ تجاهل إعلان تجاري (فلتر برمجي) — {config['name']}")
         return
@@ -240,32 +246,33 @@ async def process_batch(source_id, messages):
         print(f"⏭️ تجاهل منشور مكرر — {config['name']}")
         return
     
-    # 2. فلتر الذكاء الاصطناعي (فحص إعلان فقط)
     if cleaned:
         is_ad = await check_is_ad(config, cleaned)
         if is_ad:
             print(f"⏭️ تجاهل إعلان (ذكاء اصطناعي) — {config['name']}")
             return 
     
-    # النص النهائي هو النص الأصلي بعد التنظيف
     final_text = cleaned
     
     if cleaned: record_published_text(source_id, cleaned)
     
+    # هنا سيتم تجاهل ملفات التطبيقات (.apk) وعدم إضافتها إلى القائمة
     media_msgs = [m for m in messages if _is_usable_media_msg(m)]
     media_data = None
     is_video = False
     
     if media_msgs:
         first_m = media_msgs[0]
-        if isinstance(first_m.media, MessageMediaDocument) and first_m.video:
+        if isinstance(first_m.media, MessageMediaDocument) and getattr(first_m, 'video', None):
             is_video = True
         try: 
             media_data = await client.download_media(first_m, file=bytes)
         except Exception as e: 
             print(f"⚠️ فشل تحميل الميديا: {e}")
 
-    if not final_text.strip() and not media_data: return
+    # إذا لم يكن هناك نص ولا صورة/فيديو، يتم تجاهل المنشور بالكامل
+    if not final_text.strip() and not media_data: 
+        return
 
     # النشر على تيليجرام
     try:
@@ -287,7 +294,6 @@ async def catch_up_channel(source_id):
     entity_ref = config.get("source_username") or source_id
     
     if TEST_MODE:
-        print(f"🧪 وضع التجربة مفعل: جاري جلب آخر 5 منشورات لـ {config['name']}")
         messages = await client.get_messages(entity_ref, limit=5)
     else:
         last_id = state.get(str(source_id), 0)
