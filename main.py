@@ -18,20 +18,58 @@ os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
 TEST_MODE = False 
 
-FB_TOKEN_MEMEJI = os.getenv("FB_TOKEN_MEMEJI")
-PAGE_ID_MEMEJI = os.getenv("PAGE_ID_MEMEJI")
+FB_TOKEN_KIRKUK = os.getenv("FB_TOKEN_KIRKUK")
+FB_TOKEN_STUDENT = os.getenv("FB_TOKEN_STUDENT")
+FB_TOKEN_GTA = os.getenv("FB_TOKEN_GTA")
+
+PAGE_ID_KIRKUK = os.getenv("PAGE_ID_KIRKUK")
+PAGE_ID_STUDENT = os.getenv("PAGE_ID_STUDENT")
+PAGE_ID_GTA = os.getenv("PAGE_ID_GTA")
 
 CHANNELS = {
-    -1001234567890: { 
-        "name": "ميمزجي", 
-        "target": "@MemesjyIQ", 
-        "source_username": "@memsss_iq", 
-        "fb_page_id": PAGE_ID_MEMEJI, 
-        "fb_token": FB_TOKEN_MEMEJI,
-        "prompt": """مهمتك الوحيدة هي تحديد ما إذا كان النص التالي إعلاناً تجارياً (مثل: بيع متابعين، ترويج لعملات رقمية، إعلانات مدفوعة، روابط إحالة، عروض متاجر) أو محتوى عادي (ميمز، نكت، أخبار، فيديوهات).
-- إذا كان إعلاناً تجارياً، أعد: {"is_ad": true}
-- إذا كان محتوى عادياً، أعد: {"is_ad": false}
-- لا تقم بتعديل النص إطلاقاً. أعد النتيجة بصيغة JSON فقط."""
+    -1001565832101: {
+        "name": "كركوك الآن", "target": None,
+        "source_username": "@kirkukdiary",
+        "fb_page_id": PAGE_ID_KIRKUK, 
+        "fb_token": FB_TOKEN_KIRKUK,
+        "link": "https://t.me/KirkukNow24H",
+        "prompt": """أنت محرر صحفي عراقي. أعد ترتيب النص التالي ليكون مقروءاً. 
+- ممنوع إضافة أي معلومة من عندك أو تغيير المعنى.
+- حافظ على الأرقام والأسماء كما هي تماماً.
+- انشر أي خبر محلي أو عام (اجعل should_post=true). 
+- اجعل should_post=false إذا كان إعلاناً تجارياً صريحاً، أو إذا كان المنشور عبارة عن (مسابقة ميمز، تحشيش، سخافة، أو محتوى غير لائق).
+- **إذا كان الخبر يحتوي على نتائج امتحانات، أو روابط تحميل، أو محتوى لا يمكن نشره على فيسبوك:** اكتب ملخصاً قصيراً جداً للخبر، وفي نهاية النص أضف هذه الجملة حرفياً: "لأن [اذكر سبب المنع مثل: النتائج/المحتوى] لا يمكن نشره على فيسبوك، يمكنكم المتابعة على قناتنا على التلكرام، رابط القناة في أول تعليق." واجعل should_post=true.
+- لا تذكر اسم قناة المصدر أو روابطها نهائياً."""
+    },
+    -1001530089992: {
+        "name": "مكتبة الطالب العراقي", "target": None,
+        "source_username": "@eduiq23",
+        "fb_page_id": PAGE_ID_STUDENT, 
+        "fb_token": FB_TOKEN_STUDENT,
+        "link": "https://t.me/TalibLib",
+        "prompt": """أنت محرر لقناة تعليمية. أعد ترتيب النص التالي ليكون مقروءاً.
+- ممنوع إضافة أي معلومة من عندك أو تغيير المعنى.
+- حافظ على الأرقام والأسماء كما هي تماماً.
+- انشر الأخبار التربوية والتعليمية فقط.
+- ممنوع النشر نهائياً لأي إعلان تجاري أو بيع ملخصات أو (مسابقات ميمز/تحشيش) (اجعل should_post=false).
+- **إذا كان الخبر يحتوي على نتائج امتحانات، أو ملفات PDF، أو روابط تحميل، أو محتوى لا يمكن نشره على فيسبوك:** اكتب ملخصاً قصيراً جداً (مثلاً: "تم إعلان نتائج السادس الإعدادي")، وفي نهاية النص أضف هذه الجملة حرفياً: "لأن النتائج/الملفات لا يمكن نشرها على فيسبوك، يمكنكم المتابعة على قناتنا على التلكرام، رابط القناة في أول تعليق." واجعل should_post=true.
+- لا تذكر اسم قناة المصدر أو روابطها نهائياً."""
+    },
+    -1009003946451: {
+        "name": "تسريبات GTA 6", 
+        "target": None, 
+        "source_username": "@gta6deluxe",
+        "add_link": True, "link": "@GTA6AR",
+        "fb_page_id": PAGE_ID_GTA, 
+        "fb_token": FB_TOKEN_GTA,
+        "prompt": """أنت محرر لقناة عربية متخصصة في أخبار وتسريبات لعبة GTA 6.
+- ترجم النص إلى العربية بأسلوب طبيعي جداً كأن شخصاً عربياً كتب الخبر.
+- إذا ورد أي مبلغ بالعملة الروسية (الروبل)، قم بتحويله إلى الدولار الأمريكي (1 دولار ≈ 82.8 روبل) واكتب السعر بالدولار مع كلمة "حوالي" للتقريب.
+- احتفظ بالأرقام والأسماء كما هي.
+- لا تذكر اسم قناة المصدر أو روابطها نهائياً.
+- احذف أي عبارات ترويجية أو دعائية تخص قناة المصدر.
+- إذا كان النص إعلاناً تجارياً صريحاً اجعل should_post=false.
+- إذا كان الخبر يحتوي على فيديو أو صور (تسريبات)، قم بترجمة النص ووصف الفيديو بشكل طبيعي جداً، واجعل should_post=true ليتم نشر الفيديو على فيسبوك."""
     }
 }
 
@@ -104,24 +142,13 @@ def _is_small_thumbnail_photo(photo):
         return False
     except Exception: return False
 
-# 🛠️ قبول الصور حتى لو كانت "مستند" (Image as Document)
 def _is_usable_media_msg(m):
     media = m.media
-    if isinstance(media, MessageMediaPhoto): 
-        return True
-    if isinstance(media, MessageMediaDocument):
-        doc = media.document
-        if not doc: return False
-        mime = str(getattr(doc, "mime_type", ""))
-        # نقبل الصور (حتى لو كانت ملف) والفيديوهات
-        if mime.startswith(("image/", "video/")):
-            return True
-        return False
+    if isinstance(media, (MessageMediaPhoto, MessageMediaDocument)): return True
     if isinstance(media, MessageMediaWebPage):
         wp = getattr(media, "webpage", None)
         photo = getattr(wp, "photo", None)
-        if photo and not _is_small_thumbnail_photo(photo): 
-            return True
+        if photo and not _is_small_thumbnail_photo(photo): return True
     return False
 
 def extract_hidden_link_urls(message, source_username=None):
@@ -141,7 +168,9 @@ def extract_hidden_link_urls(message, source_username=None):
 def clean_text(text, source_username=None):
     if not text: return ""
     cleaned = text.replace('📊', '')
-    if source_username: cleaned = re.sub(re.escape(source_username), '', cleaned, flags=re.IGNORECASE)
+    if source_username: 
+        cleaned = re.sub(re.escape(source_username), '', cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r'واحد\s*العراق', '', cleaned, flags=re.IGNORECASE)
     cleaned = re.sub(r'(https?://)?t\.me/\S+', '', cleaned, flags=re.IGNORECASE)
     cleaned = re.sub(r'https?://t\.co/\S+', '', cleaned, flags=re.IGNORECASE)
     cleaned = re.sub(r'(?i)forwarded from.*', '', cleaned)
@@ -152,7 +181,14 @@ def contains_click_here_phrase(text): return bool(re.search(r'اضغط\s*هنا.
 
 def is_hardcoded_ad(text):
     if not text: return False
-    ad_keywords = [r"promo", r"crypto", r"nft", r"subscribe", r"join my", r"giveaway", r"راسل\s+المعرف", r"للحجز", r"للطلب", r"سعر", r"دينار"]
+    ad_keywords = [
+        r"راسل\s+المعرف", r"@IQED3", r"للحجز", r"للطلب", r"للتواصل", r"سعر", r"دينار", 
+        r"خصم", r"اشتراك", r"ملخصات\s+ذهبية", r"реклама", r"промокод", r"скидка", 
+        r"купить", r"цена", r"руб", r"حسب\s*جدولنا", r"ابطال\s*2027", r"رابط\s*امتحانات", r"فاينل",
+        # كلمات لمنع مسابقات الميمز والتحشيش
+        r"مسابقة\s*الميمز", r"مسابقة\s*ميمز", r"التحشيش", r"رتبة\s*ادمن", 
+        r"ميمزجي", r"pepe", r"بيج\s*بيبي", r"ميمز"
+    ]
     for kw in ad_keywords:
         if re.search(kw, text, re.IGNORECASE): return True
     return False
@@ -161,7 +197,7 @@ def call_groq(prompt, max_retries=3):
     if not GROQ_API_KEY: raise RuntimeError("no groq key")
     url = "https://api.groq.com/openai/v1/chat/completions"
     headers = {"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
-    body = {"model": GROQ_MODEL, "messages": [{"role": "user", "content": prompt}], "temperature": 0.1}
+    body = {"model": GROQ_MODEL, "messages": [{"role": "user", "content": prompt}], "temperature": 0.3}
     for attempt in range(1, max_retries + 1):
         try:
             resp = requests.post(url, json=body, headers=headers, timeout=30)
@@ -173,25 +209,27 @@ def call_groq(prompt, max_retries=3):
             if attempt == max_retries: raise e
             time.sleep(2 ** attempt)
 
-async def check_is_ad(config, text):
-    if not text: return False
+async def apply_processing(config, text):
+    if not text: return {"should_post": True, "text": ""}
     custom_prompt = config.get("prompt", "")
-    if not custom_prompt: return False
+    if not custom_prompt: return {"should_post": True, "text": text}
     
     full_prompt = f"""{custom_prompt}
 
-النص:
-{text}"""
+النص المراد معالجته:
+{text}
+
+أعد النتيجة بصيغة JSON فقط: {{"should_post": true/false, "text": "النص المعالج"}}"""
     try:
         res_raw = call_groq(full_prompt)
         if res_raw.startswith("```"):
             res_raw = res_raw.strip("`").strip()
             if res_raw.lower().startswith("json"): res_raw = res_raw[4:].strip()
         res = json.loads(res_raw)
-        return bool(res.get("is_ad", False))
+        return {"should_post": bool(res.get("should_post", True)), "text": (res.get("text") or text).strip()}
     except Exception as e:
-        print(f"❌ خطأ فحص الإعلان: {e}")
-        return False 
+        print(f"❌ خطأ المعالجة: {e}")
+        return {"should_post": False, "text": ""}
 
 def _sync_post_to_facebook(page_id, token, text, media_data=None, is_video=False):
     if not page_id or not token: return
@@ -199,11 +237,11 @@ def _sync_post_to_facebook(page_id, token, text, media_data=None, is_video=False
         base_url = f"{GRAPH}/{page_id}"
         if media_data:
             if is_video:
-                res = requests.post(f"{base_url}/videos", data={"access_token": token, "description": text}, files={"source": ("video.mp4", media_data)}, timeout=120)
+                res = requests.post(f"{base_url}/videos", data={"access_token": token, "description": text}, files={"source": ("video.mp4", media_data)}, timeout=90)
             else:
-                res = requests.post(f"{base_url}/photos", data={"access_token": token, "message": text}, files={"source": ("image.jpg", media_data)}, timeout=60)
+                res = requests.post(f"{base_url}/photos", data={"access_token": token, "message": text}, files={"source": ("image.jpg", media_data)}, timeout=45)
         else:
-            res = requests.post(f"{base_url}/feed", data={"access_token": token, "message": text}, timeout=30)
+            res = requests.post(f"{base_url}/feed", data={"access_token": token, "message": text}, timeout=20)
         
         res_data = res.json()
         if "error" in res_data:
@@ -213,9 +251,14 @@ def _sync_post_to_facebook(page_id, token, text, media_data=None, is_video=False
         post_id = res_data.get("post_id") or res_data.get("id")
         print(f"✅ نُشر على فيسبوك ({page_id})")
         
-        comment_text = "تابعونا على التلكرام 👇\nhttps://t.me/MemesjyIQ"
-        requests.post(f"{GRAPH}/{post_id}/comments", data={"access_token": token, "message": comment_text}, timeout=20)
-        print(f"✅ تمت إضافة تعليق التلكرام.")
+        comment_text = ""
+        if page_id == PAGE_ID_KIRKUK: comment_text = "تابعنا على التلكرام 👇\nhttps://t.me/KirkukNow24H"
+        elif page_id == PAGE_ID_STUDENT: comment_text = "تابعنا على التلكرام 👇\nhttps://t.me/TalibLib"
+        elif page_id == PAGE_ID_GTA: comment_text = "تابعونا على التلكرام 👇\nhttps://t.me/GTA6AR"
+        
+        if comment_text:
+            requests.post(f"{GRAPH}/{post_id}/comments", data={"access_token": token, "message": comment_text}, timeout=20)
+            print(f"✅ تمت إضافة تعليق التلكرام.")
     except Exception as e:
         print(f"❌ فشل النشر على فيسبوك: {e}")
 
@@ -232,7 +275,7 @@ async def process_batch(source_id, messages):
     if contains_click_here_phrase(raw_text): return
     
     if is_hardcoded_ad(raw_text): 
-        print(f"⏭️ تجاهل إعلان تجاري (فلتر برمجي) — {config['name']}")
+        print(f"⏭️ تجاهل إعلان/ميمز (فلتر برمجي) — {config['name']}")
         return
     
     hidden_links = extract_hidden_link_urls(text_msg, config.get("source_username"))
@@ -241,66 +284,35 @@ async def process_batch(source_id, messages):
     
     cleaned = clean_text(raw_text, config.get("source_username"))
     
-    if is_duplicate_content(source_id, cleaned): 
-        print(f"⏭️ تجاهل منشور مكرر — {config['name']}")
-        return
+    if is_duplicate_content(source_id, cleaned): return
     
-    if cleaned:
-        is_ad = await check_is_ad(config, cleaned)
-        if is_ad:
-            print(f"⏭️ تجاهل إعلان (ذكاء اصطناعي) — {config['name']}")
-            return 
+    res = await apply_processing(config, cleaned)
+    should_post = res.get("should_post", True)
+    final_text = res.get("text", cleaned)
     
-    final_text = cleaned
+    if not should_post and cleaned: 
+        print(f"⏭️ تجاهل إعلان/ميمز (ذكاء اصطناعي) — {config['name']}")
+        return 
     
     if cleaned: record_published_text(source_id, cleaned)
+    if final_text and is_duplicate_content(f"{source_id}#final", final_text): return
+    if final_text: record_published_text(f"{source_id}#final", final_text)
     
     media_msgs = [m for m in messages if _is_usable_media_msg(m)]
     media_data = None
     is_video = False
-    temp_path = None
-
+    
     if media_msgs:
         first_m = media_msgs[0]
-        if isinstance(first_m.media, MessageMediaDocument):
-            mime = str(getattr(first_m.media.document, "mime_type", ""))
-            if mime.startswith("video/"):
-                is_video = True
-        
+        if isinstance(first_m.media, MessageMediaDocument) and first_m.video:
+            is_video = True
         try: 
-            # 1. تحميل الميديا وحفظها في مجلد مؤقت لضمان إرسالها كصورة/فيديو
-            temp_path = await client.download_media(first_m, file=f"{DOWNLOAD_DIR}/")
-            if temp_path:
-                # 2. قراءة البيانات لفيسبوك
-                with open(temp_path, "rb") as f:
-                    media_data = f.read()
+            media_data = await client.download_media(first_m, file=bytes)
         except Exception as e: 
             print(f"⚠️ فشل تحميل الميديا: {e}")
 
-    if not final_text.strip() and not temp_path: 
-        print(f"⏭️ تجاهل منشور فارغ (ملف غير مدعوم) — {config['name']}")
-        return
+    if not final_text.strip() and not media_data: return
 
-    # النشر على تيليجرام
-    try:
-        if temp_path:
-            # force_document=False يضمن إرسالها كـ "صورة" وليس ملف
-            await client.send_file(config["target"], temp_path, caption=final_text or None, force_document=False, parse_mode="html")
-            print(f"✅ نُشر (صورة/فيديو) — {config['name']} [تيليجرام]")
-        elif final_text:
-            await client.send_message(config["target"], final_text, parse_mode="html", link_preview=False)
-            print(f"✅ نُشر (نص) — {config['name']} [تيليجرام]")
-    except Exception as e: 
-        print(f"❌ خطأ تيليجرام — {config['name']}: {e}")
-    finally:
-        # 3. مسح الملف المؤقت بعد النشر
-        if temp_path and os.path.exists(temp_path):
-            try:
-                os.remove(temp_path)
-            except OSError:
-                pass
-
-    # النشر على فيسبوك
     if config.get("fb_token") and config.get("fb_page_id"):
         await post_to_facebook(config["fb_page_id"], config["fb_token"], final_text, media_data, is_video)
 
